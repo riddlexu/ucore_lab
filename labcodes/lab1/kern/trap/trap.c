@@ -55,6 +55,7 @@ idt_init(void) {
     }
   }
   SETGATE(idt[T_SYSCALL], 1, GD_KTEXT, __vectors[T_SYSCALL], DPL_USER);
+  SETGATE(idt[T_SWITCH_TOK], 1, GD_KTEXT, __vectors[T_SWITCH_TOK], DPL_USER);
   lidt(&idt_pd);
 }
 
@@ -171,9 +172,31 @@ trap_dispatch(struct trapframe *tf) {
         break;
     //LAB1 CHALLENGE 1 : YOUR CODE you should modify below codes.
     case T_SWITCH_TOU:
+        asm volatile( "cli;");
+        tf->tf_ds =        0x23;
+        tf->tf_es =        0x23;
+        tf->tf_fs =        0x23;
+        tf->tf_gs =        0x23;
+        tf->tf_eflags = tf->tf_eflags | 0x200;
+        tf->tf_eflags = tf->tf_eflags | 0x3000;
+        tf->tf_ss = 0x23;
+        tf->tf_cs = 0x1B;
+        tf->tf_esp = tf->tf_regs.reg_eax;
+        break;        
     case T_SWITCH_TOK:
-        panic("T_SWITCH_** ??\n");
-        break;
+      //    panic("T_SWITCH_** ??\n");
+              asm volatile( "cli;");
+                tf->tf_ds =        0x10;
+                tf->tf_es =        0x10;
+                tf->tf_fs =        0x10;
+                tf->tf_gs =        0x10;
+                tf->tf_eflags = tf->tf_eflags | 0x200;
+                tf->tf_eflags = tf->tf_eflags & ~0x3000U | 0x1000U;
+                tf->tf_ss = 0x10;
+                tf->tf_cs = 0x8;
+                tf->tf_esp = tf->tf_regs.reg_eax;
+                cprintf("%08x\n",tf->tf_esp);
+      break;
     case IRQ_OFFSET + IRQ_IDE1:
     case IRQ_OFFSET + IRQ_IDE2:
         /* do nothing */
